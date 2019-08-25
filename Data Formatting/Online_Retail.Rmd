@@ -1,0 +1,114 @@
+---
+title: "Data Cleansing & Formatting"
+output: html_notebook
+author: Syifa Humaira
+---
+
+# Load Library
+```{r}
+library(readxl)
+library(lubridate)
+library(DataExplorer)
+library(dplyr)
+```
+
+#Import data excel
+```{r}
+Online_Retail <- read_excel("E:/Data MBA IYKRA/Online-Retail.xlsx")
+```
+
+#Check missing data
+```{r}
+plot_missing(Online_Retail)
+```
+
+#Summary of the data
+```{r}
+summary(Online_Retail)
+```
+
+#Preview of the first 6 rows and last 6 rows of data
+```{r}
+head(Online_Retail)
+tail(Online_Retail)
+```
+
+#Check Varible data
+```{r}
+str(Online_Retail)
+```
+
+#Visualize Data Structure
+```{r}
+plot_str(Online_Retail)
+```
+
+#Drop missing the value in CustomerID
+```{r}
+Online_Retail_drop <- Online_Retail [!is.na(Online_Retail$CustomerID),]
+```
+
+#View Data after Drop the missing the value
+```{r}
+View(Online_Retail_drop)
+```
+
+#Summary of Data after Drop missing the value
+```{r}
+summary(Online_Retail_drop)
+```
+
+#Check missing Data after Drop missing the value
+```{r}
+plot_missing(Online_Retail_drop)
+```
+
+#Visualize bar graph of the Country
+```{r}
+plot_bar(Online_Retail_drop$Country)
+```
+
+#Change the name of Country using gsub
+```{r}
+Online_Retail_drop$Country <- gsub('United Kingdom', 'Inggris', Online_Retail_drop$Country)
+```
+
+#Checkin the Country after change the name with visualize bar graph
+```{r}
+plot_bar(Online_Retail_drop)
+```
+
+#Now we're going to make a new table :
+# CustomerID | Recency | Frequency | Monetary
+# Recency   : Days count from 2011-12-31 to the last transaction made (in days)
+# Frequency : Transaction count in the last 6 months
+# Monetary  : Money spent for transaction by distinct CustomerID (in dollars)
+
+```{r}
+frequency <- Online_Retail_drop %>% group_by(CustomerID) %>% summarise(frequency = n_distinct(InvoiceNo))
+```
+
+```{r}
+monetary <- Online_Retail_drop %>% group_by(CustomerID) %>% summarise(monetary=sum(UnitPrice*Quantity))
+```
+
+```{r}
+recency <- Online_Retail_drop %>% group_by(CustomerID) %>% arrange(desc(InvoiceDate)) %>%   filter(row_number()==1) %>% mutate(recency = as.numeric(as.duration(interval(InvoiceDate,ymd("2011-12-31"))))/86400) %>% select(CustomerID, recency)
+```
+
+# Make the new table by joining the 3 new variable
+```{r}
+df_rfm <- recency %>% left_join(frequency,by="CustomerID") %>% left_join(monetary,by="CustomerID")
+```
+
+#Summaries data RFM
+```{r}
+summary(df_rfm)
+
+```
+
+# Make a csv file from the table
+```{r}
+write.csv(df_rfm,"Online_Retail_RFM.csv")
+```
+
